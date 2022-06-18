@@ -1,0 +1,212 @@
+install.packages("sp")
+install.packages("rgdal")
+install.packages("ggplot2")
+install.packages("sf")
+install.packages("purrr")
+install.packages("ggrepel")
+install.packages("sf")
+install.packages("scales")
+
+pacman::p_load(tidyverse, openxlsx, labelled, ggplot2,scales, jcolors)
+
+# Importar data
+
+BASE <- readxl::read_xlsx("Base.xlsx")
+BASE_B <- BASE %>% 
+  filter(Grade == "Pregrado") %>% 
+  count(Region)
+  
+
+TOTALES <- readxl::read_xlsx("TOTALES.xlsx")
+
+############## HABITANTES #########################
+# Source. National Institute of Statistics and Informatics 
+# Peru: departmental population estimates and projections 
+# by calendar years and simple age 1995-2030
+
+barra_H <- TOTALES %>% 
+  ggplot(aes(x = REGION, 
+             y= HABITANTES)) +
+  scale_y_continuous(labels = comma) +
+  coord_flip()+
+  geom_bar(stat = "identity", 
+           position= "stack")+
+  geom_col() +
+  guides(fill = FALSE)+
+  labs(
+    title = "1. Estimated population by 2021 (N = 33,035,304)",
+    y = "",
+    x = ""
+  )+
+  theme_bw() +
+  geom_label(aes(label = scales::comma(HABITANTES)), 
+             colour = "black", 
+             fontface = "bold",
+             vjust = 0.4,
+             size =4.5,
+             label.padding = unit(0.15, "lines"),
+             label.size = 0.15)
+#vjust = 0.4,
+#size =3.2,
+
+BARRA_H1 <- TOTALES %>% 
+  ggplot(aes(y = REGION, x = HABITANTES)) +
+  scale_x_continuous(labels = comma) +
+  geom_col() +
+  geom_label(aes(label = scales::comma(HABITANTES)),position = position_stack(vjust = 0.5)) +
+  labs(
+    title = "1. Estimated population by 2021 (N = 33,035,304)",
+    x = "",
+    y = ""
+  ) 
+
+
+################### CSMC ################################
+#Source. Ministry of Health. Community mental health centres 2015 - 2021
+  
+barra_C <- barra2 %>% 
+  ggplot(aes(x = NOMBDEP, y= CSMC)) +
+  coord_flip()+
+  geom_bar(stat = "identity", position= "stack") +
+  geom_col() +
+  guides(fill = FALSE)+
+  labs(
+    title = "2. Community mental health centres by region until 2021 (N = 203)",
+    y = "",
+    x = ""
+  )+
+  theme_bw() +
+  geom_label(aes(label = CSMC), colour = "black", 
+             fontface = "bold",
+             vjust = 0.4,
+             size =4.5,
+             label.padding = unit(0.15, "lines"),
+             label.size = 0.15) 
+  ggthemes::theme_fivethirtyeight()
+
+
+BARRA_H2 <- TOTALES %>% 
+    ggplot(aes(y = REGION, x = CSMC)) +
+    geom_col() +
+    geom_label(aes(label = CSMC),position = position_stack(vjust = 0.5)) +
+    labs(
+      title = "2. Community mental health centres by region until 2021 (N = 203)",
+      x = "",
+      y = "")   
+  
+  
+################### PREGRADO ################################
+#Source. Own elaboration based on the present study
+
+barra_P <- barra2 %>% 
+  ggplot(aes(x = NOMBDEP, y= PREGRADO)) +
+  coord_flip() +
+  geom_bar(stat = "identity", position= "stack")+
+  geom_col() +
+  guides(fill = FALSE)+
+  labs(
+    title = "3. Undergraduate mental health training programmes (N = 207)",
+    x = "",
+    y = ""
+  )+
+  theme_bw() +
+  geom_label(aes(label = PREGRADO), colour = "black", 
+             fontface = "bold",
+             vjust = 0.4,
+             size =4.5,
+             label.padding = unit(0.15, "lines"),
+             label.size = 0.15) 
+  ggthemes::theme_fivethirtyeight()
+
+
+BARRA_H3 <- TOTALES %>% 
+    ggplot(aes(y = REGION, x = PREGRADO)) +
+    geom_col() +
+    geom_label(aes(label = PREGRADO),position = position_stack(vjust = 0.5)) +
+    labs(
+      title = "Undergraduate mental health training programmes (n = 251)",
+      x = "",
+      y = "")   
+  
+  
+################### ESPECIALIDAD ################################
+#Source. Own elaboration based on the present study
+
+barra_SE <- barra2 %>% 
+  ggplot(aes(x = NOMBDEP, y= SE_ESPECIAL)) +
+  coord_flip() +
+  geom_bar(stat = "identity", position= "stack")+ #, colour= "black"
+  geom_col() +
+  guides(fill = FALSE)+
+  labs(
+    title = "4. Second speciality programmes required by CMHCs (N = 64)",
+    x = "",
+    y = ""
+  )+
+  theme_bw() +
+  geom_label(aes(label = SE_ESPECIAL), colour = "black", 
+             fontface = "bold",
+             vjust = 0.4,
+             size =4.5,
+             label.padding = unit(0.15, "lines"),
+             label.size = 0.15) 
+  
+  ggthemes::theme_fivethirtyeight()
+
+BARRA_H4 <- TOTALES %>% 
+    ggplot(aes(y = REGION, x = SEGUNDA)) +
+    geom_col() +
+    geom_label(aes(label = SEGUNDA),position = position_stack(vjust = 0.5)) +
+    labs(
+      title = "4. Second speciality programmes required by CMHCs (N = 63)",
+      x = "",
+      y = "") 
+  
+
+  
+################## JUNTAR REPORTES #########################
+pacman::p_load(patchwork)
+
+BARRA_plot <- (BARRA_H1 + BARRA_H2 + 
+               BARRA_H3 + BARRA_H4)
+ggsave("BARRA_plot.png",
+       plot = BARRA_plot,
+       width = 15, height = 13, dpi = 300)
+
+######################################################
+#################### CORRELACION #####################
+
+# PASO 1. ANALIZAR LA NORMALIDAD
+
+###Llamar a la librería
+
+library(nortest)
+
+###Prueba de Shapiro-Wilk (HABITANTES, CSMC, PREGRADO,SEGUNDA)
+
+shapiro.test(TOTALES$HABITANTES) #no normal
+shapiro.test(TOTALES$CSMC) #no normal
+shapiro.test(TOTALES$PREGRADO) #no normal
+shapiro.test(TOTALES$SEGUNDA) #no normal
+
+TOTALSL <- filter(TOTALES, REGION != "LIMA")
+
+TOTALSL <- TOTALSL %>% 
+  select(HABITANTES, CSMC, PREGRADO,SEGUNDA)
+
+# Correlación
+
+###Correlación de Spearman
+
+cor.test(TOTALSL$SEGUNDA,
+         TOTALSL$HABITANTES,
+         method = "spearman")
+
+
+
+
+
+
+
+
+
